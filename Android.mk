@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-
+ifneq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
 LOCAL_PATH := $(call my-dir)
 include $(LOCAL_PATH)/libbcc-config.mk
 
@@ -237,3 +237,4 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 # Include Subdirectories
 #=====================================================================
 include $(call all-makefiles-under,$(LOCAL_PATH))
+endif
