@@ -34,17 +34,30 @@ clcore_LLVM_LINK := $(HOST_OUT_EXECUTABLES)/llvm-link$(HOST_EXECUTABLE_SUFFIX)
 clcore_bc_files := $(patsubst %.c,%.bc, \
     $(addprefix $(intermediates)/, $(LOCAL_SRC_FILES)))
 
-$(clcore_bc_files): PRIVATE_INCLUDES := \
+ifeq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
+QCOM_FLAGS := -DQCOM_LLVM
+clcore_cpp_bc_files = $(addprefix $(intermediates)/, neonRuntimeMath.bc)
+endif
+
+CLANG_PATH ?= external/clang
+$(clcore_cpp_bc_files) $(clcore_bc_files): PRIVATE_INCLUDES := \
     frameworks/base/libs/rs/scriptc \
-    external/clang/lib/Headers
+    $(CLANG_PATH)/lib/Headers
+
+ifeq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
+$(clcore_cpp_bc_files) : PRIVATE_INCLUDES += $(LOCAL_PATH)
+$(intermediates)/neonRuntimeMath.bc: $(LOCAL_PATH)/neonRuntimeMath.cpp $(clcore_CLANG)
+	mkdir -p $(dir $@)
+	$(hide) $(clcore_CLANG) $(addprefix -I, $(PRIVATE_INCLUDES)) $(QCOM_FLAGS) -MD -xc++ -c -O3 -fno-builtin -emit-llvm -ccc-host-triple armv7-none-linux-gnueabi $< -o $@
+endif
 
 $(clcore_bc_files): $(intermediates)/%.bc: $(LOCAL_PATH)/%.c  $(clcore_CLANG)
 	@mkdir -p $(dir $@)
-	$(hide) $(clcore_CLANG) $(addprefix -I, $(PRIVATE_INCLUDES)) -MD -std=c99 -c -O3 -fno-builtin -emit-llvm -ccc-host-triple armv7-none-linux-gnueabi $< -o $@
+	$(hide) $(clcore_CLANG) $(addprefix -I, $(PRIVATE_INCLUDES)) $(QCOM_FLAGS) -MD -std=c99 -c -O3 -fno-builtin -emit-llvm -ccc-host-triple armv7-none-linux-gnueabi $< -o $@
 
 -include $(clcore_bc_files:%.bc=%.d)
 
-$(LOCAL_BUILT_MODULE): PRIVATE_BC_FILES := $(clcore_bc_files)
-$(LOCAL_BUILT_MODULE) : $(clcore_bc_files) $(clcore_LLVM_LINK)
+$(LOCAL_BUILT_MODULE): PRIVATE_BC_FILES := $(clcore_bc_files) $(clcore_cpp_bc_files)
+$(LOCAL_BUILT_MODULE) : $(clcore_bc_files) $(clcore_cpp_bc_files) $(clcore_LLVM_LINK)
 	@mkdir -p $(dir $@)
 	$(hide) $(clcore_LLVM_LINK) $(PRIVATE_BC_FILES) -o $@

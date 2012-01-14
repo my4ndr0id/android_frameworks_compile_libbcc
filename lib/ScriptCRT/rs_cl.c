@@ -680,6 +680,46 @@ FN_FUNC_FN_F(max)
 extern float __attribute__((overloadable)) clamp(float amount, float low, float high) {
     return amount < low ? low : (amount > high ? high : amount);
 }
+#ifdef QCOM_LLVM
+extern float2 __attribute__((overloadable)) clamp(float2 amount, float2 low, float2 high) {
+    float2 r;
+    r = amount < low ? low : ( amount > high ? high : amount );
+    return r;
+}
+extern float3 __attribute__((overloadable)) clamp(float3 amount, float3 low, float3 high) {
+    float3 r;
+    r = amount < low ? low : ( amount > high ? high : amount );
+    return r;
+}
+extern float4 __attribute__((overloadable)) clamp(float4 amount, float4 low, float4 high) {
+    float4 r;
+    r = amount < low ? low : ( amount > high ? high : amount );
+    return r;
+}
+extern float2 __attribute__((overloadable)) clamp(float2 amount, float low, float high) {
+    float2 r;
+    float2 vlow = low;
+    float2 vhigh = high;
+    r = amount < vlow ? vlow : ( amount > vhigh ? vhigh : amount );
+    return r;
+}
+extern float3 __attribute__((overloadable)) clamp(float3 amount, float low, float high) {
+    float3 r;
+    float3 vlow = low;
+    float3 vhigh = high;
+    r = amount < vlow ? vlow : ( amount > vhigh ? vhigh : amount );
+    return r;
+}
+extern float4 __attribute__((overloadable)) clamp(float4 amount, float low, float high) {
+    float4 r;
+    float4 vlow = low;
+    float4 vhigh = high;
+    r = amount < vlow ? vlow : ( amount > vhigh ? vhigh : amount );
+    return r;
+}
+
+
+#else
 extern float2 __attribute__((overloadable)) clamp(float2 amount, float2 low, float2 high) {
     float2 r;
     r.x = amount.x < low.x ? low.x : (amount.x > high.x ? high.x : amount.x);
@@ -722,7 +762,7 @@ extern float4 __attribute__((overloadable)) clamp(float4 amount, float low, floa
     r.w = amount.w < low ? low : (amount.w > high ? high : amount.w);
     return r;
 }
-
+#endif
 extern float __attribute__((overloadable)) degrees(float radians) {
     return radians * (180.f / M_PI);
 }
@@ -764,6 +804,45 @@ extern float2 __attribute__((overloadable)) step(float2 edge, float2 v) {
     r.y = (v.y < edge.y) ? 0.f : 1.f;
     return r;
 }
+
+#ifdef QCOM_LLVM
+extern float3 __attribute__((overloadable)) step(float3 edge, float3 v) {
+    float3 r;
+    float3 vzero = 0.f;
+    float3 vone = 1.f;
+    r = v < edge ? vzero : vone;
+    return r;
+}
+extern float4 __attribute__((overloadable)) step(float4 edge, float4 v) {
+    float4 r;
+    float4 vzero = 0.f;
+    float4 vone = 1.f;
+    r = v < edge ? vzero : vone;
+    return r;
+}
+extern float2 __attribute__((overloadable)) step(float2 edge, float v) {
+    float2 r;
+    r.x = (v < edge.x) ? 0.f : 1.f;
+    r.y = (v < edge.y) ? 0.f : 1.f;
+    return r;
+}
+extern float3 __attribute__((overloadable)) step(float3 edge, float v) {
+    float3 r;
+    float3 vzero = 0.f;
+    float3 vone = 1.f;
+    float3 vv = v;
+    r = vv < edge ? vzero : vone;
+    return r;
+}
+extern float4 __attribute__((overloadable)) step(float4 edge, float v) {
+    float4 r;
+    float4 vzero = 0.f;
+    float4 vone = 1.f;
+    float4 vv = v;
+    r = vv < edge ? vzero : vone;
+    return r;
+}
+#else
 extern float3 __attribute__((overloadable)) step(float3 edge, float3 v) {
     float3 r;
     r.x = (v.x < edge.x) ? 0.f : 1.f;
@@ -800,7 +879,7 @@ extern float4 __attribute__((overloadable)) step(float4 edge, float v) {
     r.w = (v < edge.w) ? 0.f : 1.f;
     return r;
 }
-
+#endif
 extern float __attribute__((overloadable)) smoothstep(float, float, float);
 extern float2 __attribute__((overloadable)) smoothstep(float2, float2, float2);
 extern float3 __attribute__((overloadable)) smoothstep(float3, float3, float3);
@@ -841,6 +920,31 @@ extern float __attribute__((overloadable)) dot(float lhs, float rhs) {
 extern float __attribute__((overloadable)) dot(float2 lhs, float2 rhs) {
     return lhs.x*rhs.x + lhs.y*rhs.y;
 }
+#ifdef QCOM_LLVM
+extern float __attribute__((overloadable)) dot(float3 lhs, float3 rhs) {
+    float3 t = lhs * rhs;
+    return ( t.x + t.y + t.z );
+}
+extern float __attribute__((overloadable)) dot(float4 lhs, float4 rhs) {
+    float4 t = lhs * rhs;
+    return (t.x + t.y + t.z + t.w );
+}
+
+extern float __attribute__((overloadable)) length(float v) {
+    return v;
+}
+extern float __attribute__((overloadable)) length(float2 v) {
+    return sqrt(v.x*v.x + v.y*v.y);
+}
+extern float __attribute__((overloadable)) length(float3 v) {
+    float3 t = v*v;
+    return sqrt(t.x + t.y + t.z );
+}
+extern float __attribute__((overloadable)) length(float4 v) {
+    float4 t = v*v;
+    return sqrt(t.x + t.y + t.z + t.w);
+}
+#else
 extern float __attribute__((overloadable)) dot(float3 lhs, float3 rhs) {
     return lhs.x*rhs.x + lhs.y*rhs.y + lhs.z*rhs.z;
 }
@@ -860,7 +964,7 @@ extern float __attribute__((overloadable)) length(float3 v) {
 extern float __attribute__((overloadable)) length(float4 v) {
     return sqrt(v.x*v.x + v.y*v.y + v.z*v.z + v.w*v.w);
 }
-
+#endif
 extern float __attribute__((overloadable)) distance(float lhs, float rhs) {
     return length(lhs - rhs);
 }

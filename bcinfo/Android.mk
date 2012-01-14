@@ -44,7 +44,8 @@ libbcinfo_STATIC_LIBRARIES := \
   libLLVMSupport \
   libLLVMBitReader_2_7 \
 
-LLVM_ROOT_PATH := external/llvm
+LLVM_PATH ?= external/llvm
+LLVM_ROOT_PATH := $(LLVM_PATH)
 
 include $(CLEAR_VARS)
 

@@ -1,5 +1,7 @@
 #include "rs_core.rsh"
+#ifndef QCOM_LLVM
 #include "rs_graphics.rsh"
+#endif
 /*****************************************************************************
  * CAUTION
  *
@@ -17,6 +19,245 @@
  * allocations.
  *
  *****************************************************************************/
+#ifdef QCOM_LLVM
+typedef struct Allocation {
+    char __pad[44];
+    struct Hal {
+        struct State {
+            uint32_t dimensionX;
+            uint32_t dimensionY;
+            uint32_t dimensionZ;
+            uint32_t elementSizeBytes;
+            bool hasMipmaps;
+            bool hasFaces;
+            bool hasReferences;
+        } state;
+
+        struct DrvState {
+            void * mallocPtr;
+        } drvState;
+    } mHal;
+} Allocation_t;
+
+/* Declaration of 4 basic functions in libRS */
+extern void __attribute__((overloadable))
+    rsDebug(const char *, float, float);
+extern void __attribute__((overloadable))
+    rsDebug(const char *, float, float, float);
+extern void __attribute__((overloadable))
+    rsDebug(const char *, float, float, float, float);
+extern float4 __attribute__((overloadable)) convert_float4(uchar4 c);
+
+/* Implementation of Core Runtime */
+
+extern void __attribute__((overloadable)) rsDebug(const char *s, float2 v) {
+    rsDebug(s, v.x, v.y);
+}
+
+extern void __attribute__((overloadable)) rsDebug(const char *s, float3 v) {
+    rsDebug(s, v.x, v.y, v.z);
+}
+
+extern void __attribute__((overloadable)) rsDebug(const char *s, float4 v) {
+    rsDebug(s, v.x, v.y, v.z, v.w);
+}
+
+extern uchar4 __attribute__((overloadable)) rsPackColorTo8888(float r, float g, float b)
+{
+    uchar4 c;
+    c.x = (uchar)(r * 255.f + 0.5f);
+    c.y = (uchar)(g * 255.f + 0.5f);
+    c.z = (uchar)(b * 255.f + 0.5f);
+    c.w = 255;
+    return c;
+}
+
+extern uchar4 __attribute__((overloadable)) rsPackColorTo8888(float r, float g, float b, float a)
+{
+    uchar4 c;
+    c.x = (uchar)(r * 255.f + 0.5f);
+    c.y = (uchar)(g * 255.f + 0.5f);
+    c.z = (uchar)(b * 255.f + 0.5f);
+    c.w = (uchar)(a * 255.f + 0.5f);
+    return c;
+}
+
+extern uchar4 __attribute__((overloadable)) rsPackColorTo8888(float3 color)
+{
+    color *= 255.f;
+    color += 0.5f;
+    uchar4 c = {color.x, color.y, color.z, 255};
+    return c;
+}
+
+extern uchar4 __attribute__((overloadable)) rsPackColorTo8888(float4 color)
+{
+    color *= 255.f;
+    color += 0.5f;
+    uchar4 c = {color.x, color.y, color.z, color.w};
+    return c;
+}
+
+extern float4 rsUnpackColor8888(uchar4 c)
+{
+    float4 ret = (float4)0.003921569f;
+    ret *= convert_float4(c);
+    return ret;
+}
+
+/////////////////////////////////////////////////////
+// Matrix ops
+/////////////////////////////////////////////////////
+
+extern void __attribute__((overloadable))
+rsMatrixSet(rs_matrix4x4 *m, uint32_t row, uint32_t col, float v) {
+    m->m[row * 4 + col] = v;
+}
+
+extern float __attribute__((overloadable))
+rsMatrixGet(const rs_matrix4x4 *m, uint32_t row, uint32_t col) {
+    return m->m[row * 4 + col];
+}
+
+extern void __attribute__((overloadable))
+rsMatrixSet(rs_matrix3x3 *m, uint32_t row, uint32_t col, float v) {
+    m->m[row * 3 + col] = v;
+}
+
+extern float __attribute__((overloadable))
+rsMatrixGet(const rs_matrix3x3 *m, uint32_t row, uint32_t col) {
+    return m->m[row * 3 + col];
+}
+
+extern void __attribute__((overloadable))
+rsMatrixSet(rs_matrix2x2 *m, uint32_t row, uint32_t col, float v) {
+    m->m[row * 2 + col] = v;
+}
+
+extern float __attribute__((overloadable))
+rsMatrixGet(const rs_matrix2x2 *m, uint32_t row, uint32_t col) {
+    return m->m[row * 2 + col];
+}
+
+
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(const rs_matrix4x4 *m, float4 in) {
+    float4 ret;
+
+    float4 vm1;
+    float4 vm2;
+    float4 vm3;
+    float4 vm4;
+
+    float4* M = (float4*) m->m;
+
+    vm1 = M[0];
+    vm2 = M[1];
+    vm3 = M[2];
+    vm4 = M[3];
+
+    ret = vm1 * in.x + vm2 * in.y + vm3 * in.z + vm4 * in.w;
+    return ret;
+}
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(rs_matrix4x4 *m, float4 in) {
+    return rsMatrixMultiply((const rs_matrix4x4 *)m, in);
+}
+
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(const rs_matrix4x4 *m, float3 in) {
+    float4 ret;
+    float4 vm1;
+    float4 vm2;
+    float4 vm3;
+    float4 vm4;
+
+    float4* M = (float4*) m->m;
+
+    vm1 = M[0];
+    vm2 = M[1];
+    vm3 = M[2];
+    vm4 = M[3];
+
+    ret = vm1 * in.x + vm2 * in.y + vm3 * in.z + vm4;
+    return ret;
+}
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(rs_matrix4x4 *m, float3 in) {
+    return rsMatrixMultiply((const rs_matrix4x4 *)m, in);
+}
+
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(const rs_matrix4x4 *m, float2 in) {
+    float4 ret;
+    float4 vm1;
+    float4 vm2;
+    float4 vm4;
+
+    float4* M = (float4*) m->m;
+
+    vm1 = M[0];
+    vm2 = M[1];
+    vm4 = M[3];
+
+    ret = vm1 * in.x + vm2 * in.y + vm4;
+    return ret;
+}
+extern float4 __attribute__((overloadable))
+rsMatrixMultiply(rs_matrix4x4 *m, float2 in) {
+    return rsMatrixMultiply((const rs_matrix4x4 *)m, in);
+}
+
+extern float3 __attribute__((overloadable))
+rsMatrixMultiply(const rs_matrix3x3 *m, float3 in) {
+    float3 ret;
+
+    float3 vm1;
+    float3 vm2;
+    float3 vm3;
+
+    vm1.x = m->m[0];
+    vm1.y = m->m[1];
+    vm1.z = m->m[2];
+    vm2.x = m->m[3];
+    vm2.y = m->m[4];
+    vm2.z = m->m[5];
+    vm3.x = m->m[6];
+    vm3.y = m->m[7];
+    vm3.z = m->m[8];
+
+    ret = vm1 * in.x + vm2 * in.y + vm3 * in.z;
+    return ret;
+}
+extern float3 __attribute__((overloadable))
+rsMatrixMultiply(rs_matrix3x3 *m, float3 in) {
+    return rsMatrixMultiply((const rs_matrix3x3 *)m, in);
+}
+
+
+extern float3 __attribute__((overloadable))
+rsMatrixMultiply(const rs_matrix3x3 *m, float2 in) {
+    float3 ret;
+
+    float3 vm1;
+    float3 vm2;
+
+    vm1.x = m->m[0];
+    vm1.y = m->m[1];
+    vm1.z = m->m[2];
+    vm2.x = m->m[3];
+    vm2.y = m->m[4];
+    vm2.z = m->m[5];
+
+    ret = vm1 * in.x + vm2 * in.y;
+    return ret;
+}
+extern float3 __attribute__((overloadable))
+rsMatrixMultiply(rs_matrix3x3 *m, float2 in) {
+    return rsMatrixMultiply((const rs_matrix3x3 *)m, in);
+}
+
+#else
 typedef struct Allocation {
     char __pad[44];
     struct {
@@ -205,6 +446,7 @@ extern float3 __attribute__((overloadable))
 rsMatrixMultiply(rs_matrix3x3 *m, float2 in) {
     return rsMatrixMultiply((const rs_matrix3x3 *)m, in);
 }
+#endif
 
 extern float2 __attribute__((overloadable))
 rsMatrixMultiply(const rs_matrix2x2 *m, float2 in) {

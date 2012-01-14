@@ -129,8 +129,16 @@ void Compiler::GlobalInitialization() {
   // Set Triple, CPU and Features here
   Triple = TARGET_TRIPLE_STRING;
 
-#if defined(DEFAULT_ARM_CODEGEN)
+#if defined(QCOM_LLVM)
+# if defined(ARCH_ARM_MCPU_8660) || defined(ARCH_ARM_MCPU_8X55)
+  CPU = "scorpion";
+#endif
+#if defined(ARCH_ARM_MCPU_8960)
+  CPU = "krait";
+#endif
+#endif
 
+#if defined(DEFAULT_ARM_CODEGEN)
 #if defined(ARCH_ARM_HAVE_VFP)
   Features.push_back("+vfp3");
 #if !defined(ARCH_ARM_HAVE_VFP_D32)
@@ -142,6 +150,16 @@ void Compiler::GlobalInitialization() {
   // Since the ARMCodeEmitter.cpp is not ready for JITing NEON
   // instructions.
 
+#if defined(QCOM_LLVM)
+#if defined(ARCH_ARM_MCPU_8960)
+  Features.push_back("+neon-vfpv4");
+#else
+#if defined(ARCH_ARM_MCPU_8660) || defined(ARCH_ARM_MCPU_8X55) ||\
+  defined(ARCH_ARM_MCPU_7X27A)
+  Features.push_back("+neon");
+#endif
+#endif
+#else
   // FIXME: Re-enable NEON when ARMCodeEmitter supports NEON.
 #define USE_ARM_NEON 0
 #if USE_ARM_NEON
@@ -152,6 +170,7 @@ void Compiler::GlobalInitialization() {
   Features.push_back("-neonfp");
 #endif // USE_ARM_NEON
 #endif // DEFAULT_ARM_CODEGEN
+#endif // QCOM_LLVM
 
 #if defined(PROVIDE_ARM_CODEGEN)
   LLVMInitializeARMAsmPrinter();
@@ -159,8 +178,7 @@ void Compiler::GlobalInitialization() {
   LLVMInitializeARMTargetInfo();
   LLVMInitializeARMTarget();
 #endif
-
-#if defined(PROVIDE_X86_CODEGEN)
+#if defined(PROVIDE_X86_CODEGEN) && !defined(QCOM_LLVM)
   LLVMInitializeX86AsmPrinter();
   LLVMInitializeX86TargetMC();
   LLVMInitializeX86TargetInfo();
@@ -203,6 +221,25 @@ void Compiler::GlobalInitialization() {
     ((CodeGenOptLevel == llvm::CodeGenOpt::None) ?
      llvm::createFastRegisterAllocator :
      llvm::createLinearScanRegisterAllocator);
+
+  // set optimization flags
+#if defined(QCOM_LLVM)
+#if  defined(ARCH_ARM_MCPU_8960) || defined(ARCH_ARM_MCPU_8660) ||\
+  defined(ARCH_ARM_MCPU_8X55) || defined(ARCH_ARM_MCPU_7X27A)
+  // -mllvm -enable-rs-opt: -expand-limit=0 -check-vmlx-hazard=false
+  // -unroll-threshold=1000 -unroll-allow-partial -pre-RA-sched=list-ilp
+  std::vector<const char *> Opts;
+  Opts.push_back("clang (LLVM option parsing)"); // Fake program name.
+  Opts.push_back("-pre-RA-sched=list-ilp");
+  Opts.push_back("-expand-limit=0");
+  Opts.push_back("-check-vmlx-hazard=false");
+  Opts.push_back("-unroll-threshold=1000");
+  Opts.push_back("-unroll-allow-partial");
+  Opts.push_back(0);
+
+  llvm::cl::ParseCommandLineOptions(Opts.size() - 1, const_cast<char **>(&Opts[0]));
+#endif
+#endif
 
 #if USE_CACHE
   // Read in SHA1 checksum of libbcc and libRS.
@@ -789,6 +826,11 @@ int Compiler::runLTO(llvm::TargetData *TD,
 
   // Hoist loop invariants.
   LTOPasses.add(llvm::createLICMPass());
+
+#if defined(QCOM_LLVM)
+  // Perform loop unrolling
+  LTOPasses.add(llvm::createLoopUnrollPass());
+#endif
 
   // Remove redundancies.
   LTOPasses.add(llvm::createGVNPass());

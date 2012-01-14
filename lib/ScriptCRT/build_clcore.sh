@@ -10,6 +10,7 @@ scriptc_path=../../../../base/libs/rs/scriptc
 clang_header_path=../../../../../external/clang/lib/Headers
 
 clang -ccc-host-triple armv7-none-linux-gnueabi -I${scriptc_path} -I${clang_header_path} -c -std=c99 -O3 rs_cl.c -emit-llvm -o rs_cl.bc
+clang -ccc-host-triple armv7-none-linux-gnueabi -I${scriptc_path} -I${clang_header_path} -c -std=c99 -O3 neonRuntimeMath.cpp -emit-llvm -o neonRuntimeMath.bc
 
 # Generate rs_core.bc
 # ===================
@@ -19,4 +20,4 @@ clang -ccc-host-triple armv7-none-linux-gnueabi -I${scriptc_path} -I${clang_head
 # Link everything together
 # ========================
 
-llvm-link rs_cl.bc rs_core.bc -o libclcore.bc
+llvm-link rs_cl.bc rs_core.bc neonRuntimeMath.bc -o libclcore.bc

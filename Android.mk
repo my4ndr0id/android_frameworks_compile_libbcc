@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-ifneq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
 LOCAL_PATH := $(call my-dir)
 include $(LOCAL_PATH)/libbcc-config.mk
 
@@ -142,7 +141,11 @@ LOCAL_REQUIRED_MODULES := libclcore.bc libbcc.so.sha1
 # the symbols in this shared library. As a result, it reduced the size of libbcc.so
 # by about 800k in 2010.
 # Note that libLLVMBitReader:libLLVMCore:libLLVMSupport are used by pixelflinger2.
-LOCAL_LDFLAGS += -Wl,--exclude-libs=libLLVMARMDisassembler:libLLVMARMAsmPrinter:libLLVMX86Disassembler:libLLVMX86AsmPrinter:libLLVMMCParser:libLLVMARMCodeGen:libLLVMARMDesc:libLLVMARMInfo:libLLVMSelectionDAG:libLLVMAsmPrinter:libLLVMCodeGen:libLLVMLinker:libLLVMJIT:libLLVMTarget:libLLVMMC:libLLVMScalarOpts:libLLVMInstCombine:libLLVMipo:libLLVMipa:libLLVMTransformUtils:libLLVMAnalysis
+ifeq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
+  LOCAL_LDFLAGS += -Wl,--exclude-libs=ALL
+else
+  LOCAL_LDFLAGS += -Wl,--exclude-libs=libLLVMARMDisassembler:libLLVMARMAsmPrinter:libLLVMX86Disassembler:libLLVMX86AsmPrinter:libLLVMMCParser:libLLVMARMCodeGen:libLLVMARMDesc:libLLVMARMInfo:libLLVMSelectionDAG:libLLVMAsmPrinter:libLLVMCodeGen:libLLVMLinker:libLLVMJIT:libLLVMTarget:libLLVMMC:libLLVMScalarOpts:libLLVMInstCombine:libLLVMipo:libLLVMipa:libLLVMTransformUtils:libLLVMAnalysis
+endif
 
 # Generate build stamp (Build time + Build git revision + Build Semi SHA1)
 include $(LOCAL_PATH)/libbcc-gen-build-stamp.mk
@@ -186,12 +189,18 @@ LOCAL_STATIC_LIBRARIES += \
   libutils \
   libLLVMARMCodeGen \
   libLLVMARMDesc \
-  libLLVMARMInfo \
+  libLLVMARMInfo
+
+ifneq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
+LOCAL_STATIC_LIBRARIES += \
   libLLVMX86CodeGen \
   libLLVMX86Desc \
   libLLVMX86Info \
   libLLVMX86Utils \
-  libLLVMX86AsmPrinter \
+  libLLVMX86AsmPrinter
+endif
+
+LOCAL_STATIC_LIBRARIES += \
   libLLVMAsmPrinter \
   libLLVMBitReader \
   libLLVMSelectionDAG \
@@ -237,4 +246,3 @@ include $(BUILD_HOST_SHARED_LIBRARY)
 # Include Subdirectories
 #=====================================================================
 include $(call all-makefiles-under,$(LOCAL_PATH))
-endif
