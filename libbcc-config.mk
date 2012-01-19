@@ -19,8 +19,7 @@
 # Root Path for Other Projects
 #=====================================================================
 
-LLVM_PATH           ?= external/llvm
-LLVM_ROOT_PATH      := $(LLVM_PATH)
+LLVM_ROOT_PATH      := $(call get_llvm_root_path)
 LIBBCC_ROOT_PATH    := frameworks/compile/libbcc
 RSLOADER_ROOT_PATH  := frameworks/compile/linkloader
 

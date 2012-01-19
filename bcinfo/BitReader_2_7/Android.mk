@@ -1,7 +1,6 @@
 LOCAL_PATH:= $(call my-dir)
 
-LLVM_PATH ?= $(LOCAL_PATH)/../../../../../external/llvm
-LLVM_ROOT_PATH := $(LLVM_PATH)
+LLVM_ROOT_PATH := $(call get_llvm_root_path)
 include $(LLVM_ROOT_PATH)/llvm.mk
 
 bitcode_reader_2_7_SRC_FILES := \
