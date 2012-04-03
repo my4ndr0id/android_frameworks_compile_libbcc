@@ -48,7 +48,7 @@ ifeq ($(BOARD_USE_QCOM_LLVM_CLANG_RS),true)
 $(clcore_cpp_bc_files) : PRIVATE_INCLUDES += $(LOCAL_PATH)
 $(intermediates)/neonRuntimeMath.bc: $(LOCAL_PATH)/neonRuntimeMath.cpp $(clcore_CLANG)
 	mkdir -p $(dir $@)
-	$(hide) $(clcore_CLANG) $(addprefix -I, $(PRIVATE_INCLUDES)) $(QCOM_FLAGS) -MD -xc++ -c -O3 -fno-builtin -emit-llvm -ccc-host-triple armv7-none-linux-gnueabi $< -o $@
+	$(hide) $(clcore_CLANG) $(addprefix -I, $(PRIVATE_INCLUDES)) $(QCOM_FLAGS) -MD -xc++ -c -O3 -emit-llvm -ccc-host-triple armv7-none-linux-gnueabi $< -o $@
 endif
 
 $(clcore_bc_files): $(intermediates)/%.bc: $(LOCAL_PATH)/%.c  $(clcore_CLANG)

@@ -30,6 +30,14 @@
 #include <stdint.h>
 #include <string.h>
 
+extern "C" {
+  float sqrtf(float);
+};
+
+float sqrt(float f) {
+  return sqrtf(f);
+}
+
 typedef struct {
   float m[16];
 } rs_matrix4x4;
@@ -45,7 +53,6 @@ typedef struct {
 extern float sin(float);
 extern float cos(float);
 extern float fabs(float);
-extern float sqrt(float);
 extern float tan(float);
 #define M_PI        3.14159265358979323846264338327950288f   /* pi */
 
